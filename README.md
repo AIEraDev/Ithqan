@@ -173,6 +173,12 @@ Ensure you have the following tools installed on your development machine:
    cd Ithqan
    ```
 
+   **Install via Homebrew:**
+   ```bash
+   brew tap aieradev/ithqan
+   brew install --cask ithqan
+   ```
+
 2. **Install Dependencies**:
    ```bash
    npm install

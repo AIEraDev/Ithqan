@@ -228,7 +228,7 @@ jobs:
 
             **Install via Homebrew:**
             ```bash
-            brew tap AIEraDev/tap
+            brew tap aieradev/ithqan
             brew install --cask ithqan
             ```
 
@@ -261,6 +261,6 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.TAP_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          repository: AIEraDev/homebrew-tap
+          repository: AIEraDev/homebrew-ithqan
           event-type: update-cask
           client-payload: '{"version": "${{ github.ref_name }}"}'
