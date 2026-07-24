@@ -257,9 +257,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger Homebrew tap update
+        continue-on-error: true
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TAP_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           repository: AIEraDev/homebrew-tap
           event-type: update-cask
           client-payload: '{"version": "${{ github.ref_name }}"}'
