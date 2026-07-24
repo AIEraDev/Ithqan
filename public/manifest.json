@@ -1,0 +1,18 @@
+{
+  "short_name": "Ithqan",
+  "name": "Ithqan (إتقان) — Local-First Quran Review & Memorization Companion",
+  "icons": [
+    {
+      "src": "/ithqan.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "High-performance, local-first Quran review companion featuring verse-by-verse repetition looper, 604-page spaced-repetition decay heatmap, and offline audio downloads on Windows, macOS, and Linux.",
+  "categories": ["education", "utilities", "lifestyle"]
+}

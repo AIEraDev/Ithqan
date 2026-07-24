@@ -1,6 +1,6 @@
-# Ithqan (إتقان) — Desktop Quran Review Companion
+# Ithqan (إتقان) — Cross-Platform Desktop Quran Review Companion
 
-> A high-performance, local-first macOS and desktop menu bar application built for Huffaz and students of the Quran to structure memorization, track retention across all 604 pages, and customize audio repetition workflows.
+> A high-performance, local-first cross-platform desktop application built for Windows, macOS, and Linux to empower Huffaz and students of the Quran to structure memorization, track retention across all 604 pages, and customize audio repetition workflows offline.
 
 ![Tauri v2](https://img.shields.io/badge/Tauri-v2-blue?logo=tauri)
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -8,7 +8,7 @@
 ![Rust](https://img.shields.io/badge/Rust-Backend-000000?logo=rust)
 ![SQLite](https://img.shields.io/badge/SQLite-Local_Storage-003B57?logo=sqlite)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss)
-![macOS Popover](https://img.shields.io/badge/Platform-macOS_%2F_Desktop-apple?logo=apple)
+![Cross Platform](https://img.shields.io/badge/Platform-Windows_%7C_macOS_%7C_Linux-blue)
 
 ---
 
@@ -21,7 +21,7 @@ Memorizing and retaining the Quran (*Hifz* and *Muraja'ah*) requires continuous,
 3. **Desktop Friction & Distraction**: Opening full browser windows or bloated desktop applications disrupts workflow. Huffaz need a lightweight, floating menu bar app accessible instantly via hotkey without switching contexts.
 4. **Network Dependence & Interruption**: Audio streaming buffering breaks recitation flow. Local caching and instant offline playback are mandatory for continuous study sessions.
 
-**Ithqan (إتقان)** solves these challenges by combining a **native menu bar popover interface**, an **advanced audio looper engine**, an **interactive 604-page spaced-repetition heatmap**, and a **local SQLite storage & audio caching system**.
+**Ithqan (إتقان)** solves these challenges by combining a **native system tray popover interface**, an **advanced audio looper engine**, an **interactive 604-page spaced-repetition heatmap**, and a **local SQLite storage & audio caching system**.
 
 ---
 
@@ -29,11 +29,11 @@ Memorizing and retaining the Quran (*Hifz* and *Muraja'ah*) requires continuous,
 
 | Layer | Technology | Purpose & Capabilities |
 | :--- | :--- | :--- |
-| **Desktop Shell** | **Tauri v2 (Rust)** | Provides native macOS menu bar system tray integration, borderless popover window management, global hotkeys, and system wake listeners. |
+| **Desktop Shell** | **Tauri v2 (Rust)** | Provides native cross-platform system tray integration (macOS menu bar, Windows taskbar tray, Linux app indicator), borderless popover window management, global hotkeys, and system wake listeners. |
 | **Backend & Persistence** | **Rust + SQLite (`rusqlite`)** | Local-first relational storage for review history, page logs, user settings, bookmarks, and local audio file cache metadata. |
 | **Frontend Framework** | **React 19 + TypeScript** | Component-driven UI rendering with strict type safety for queue management and player configurations. |
 | **State Management** | **Zustand v5** | Reactive state management powering `useQueueStore` (queue progression) and `usePlayerStore` (HTML5 audio engine integration). |
-| **Styling & Design** | **Tailwind CSS v4** | Modern dark glassmorphism design system customized for macOS popovers (`var(--bg-popover)`, custom scrollbars, segmented controls). |
+| **Styling & Design** | **Tailwind CSS v4** | Modern dark glassmorphism design system tailored for popover interfaces (`var(--bg-popover)`, custom scrollbars, segmented controls). |
 | **Audio Engine** | **HTML5 Audio + REST APIs** | Seamless gapless playback, speed adjustment (0.75x–1.25x), inter-repeat silence gaps, and automated pre-caching from EveryAyah / Quran API. |
 | **Icons & Typography** | **Lucide React + Arabic Fonts** | Minimalist UI iconography combined with native Arabic typography for clean Quranic readability. |
 
