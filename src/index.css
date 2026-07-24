@@ -1,0 +1,333 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ── */
+:root {
+  --bg-popover: #0C0E12;
+  --bg-surface: #13161B;
+  --bg-input: #1A1D24;
+  --border-subtle: #1E2128;
+  --border-default: #2A2E37;
+  --text-primary: #E8EAED;
+  --text-secondary: #8B919A;
+  --text-tertiary: #565B65;
+  --accent: #34D399;
+  --accent-muted: rgba(52, 211, 153, 0.12);
+  --accent-warm: #F59E0B;
+  --accent-warm-muted: rgba(245, 158, 11, 0.12);
+  --danger: #F87171;
+  --danger-muted: rgba(248, 113, 113, 0.12);
+  --radius-shell: 16px;
+  --radius-card: 10px;
+  --radius-btn: 6px;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-arabic: 'Amiri', serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+}
+
+/* ── Base Reset ── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    background: transparent !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ── Popover Entrance Animation ── */
+@keyframes popover-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popover-shell {
+  animation: popover-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  border: 1px solid var(--border-default);
+}
+
+/* ── Scrollbar ── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* ── Typography Utilities ── */
+.text-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.text-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.text-body {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.text-meta {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.text-arabic {
+  font-family: var(--font-arabic);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+/* ── Surface Utilities ── */
+.surface-popover {
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+}
+
+.surface-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.surface-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-btn);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.1s ease;
+}
+.surface-input:focus {
+  border-color: var(--accent);
+}
+
+/* ── Button Utilities ── */
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg-popover);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius-card);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+  width: 100%;
+  text-align: center;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+.btn-primary:active {
+  opacity: 0.8;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--radius-btn);
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.btn-ghost:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+/* ── Segmented Control ── */
+.seg-group {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.seg-item {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  background: transparent;
+  transition: all 0.1s ease;
+}
+.seg-item:hover {
+  color: var(--text-secondary);
+}
+.seg-item-active {
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Progress Bar ── */
+.progress-track {
+  width: 100%;
+  height: 2px;
+  background: var(--border-default);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.15s linear;
+}
+
+/* ── Transport Button ── */
+.transport-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.transport-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+.transport-btn-primary {
+  background: var(--accent);
+  color: var(--bg-popover);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+.transport-btn-primary:hover {
+  opacity: 0.9;
+  background: var(--accent);
+  color: var(--bg-popover);
+}
+
+/* ── Pill Badge ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.pill-accent {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+.pill-warm {
+  background: var(--accent-warm-muted);
+  color: var(--accent-warm);
+}
+.pill-danger {
+  background: var(--danger-muted);
+  color: var(--danger);
+}
+
+/* ── Divider ── */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ── Range Slider ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--border-default);
+  border-radius: 1px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-popover);
+}
+
+/* ── Checkbox ── */
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* ── Select ── */
+select.surface-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238B919A' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}

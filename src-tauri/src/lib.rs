@@ -1,0 +1,76 @@
+#[cfg(target_os = "macos")]
+#[macro_use]
+extern crate objc;
+
+pub mod audio_cache;
+pub mod commands;
+pub mod db;
+pub mod hotkeys;
+pub mod quran_data;
+pub mod reciters;
+pub mod tray;
+
+use tauri::Manager;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .setup(|app| {
+            let app_handle = app.handle();
+
+            if let Err(err) = db::init_db(app_handle) {
+                eprintln!("Failed to initialize database: {}", err);
+            }
+
+            if let Err(err) = tray::setup_tray(app_handle) {
+                eprintln!("Failed to setup system tray: {}", err);
+            }
+
+            if let Err(err) = hotkeys::setup_hotkeys(app_handle) {
+                eprintln!("Failed to setup global hotkeys: {}", err);
+            }
+
+            if let Some(window) = app_handle.get_webview_window("main") {
+                tray::configure_macos_window(&window);
+            }
+
+            Ok(())
+        })
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+            tauri::WindowEvent::Focused(false) => {
+                let _ = window.hide();
+            }
+            _ => {}
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::get_surahs,
+            commands::get_surah,
+            commands::get_page_info,
+            commands::get_ayahs_for_page,
+            commands::get_page_for_ayah,
+            commands::get_ayah_range,
+            commands::get_pages_for_range,
+            commands::get_available_reciters,
+            commands::ensure_ayah_audio,
+            commands::is_ayah_cached,
+            commands::get_cache_stats,
+            commands::clear_cache,
+            commands::save_current_session,
+            commands::get_last_session,
+            commands::add_bookmark,
+            commands::get_bookmarks,
+            commands::delete_bookmark,
+            commands::record_page_review,
+            commands::get_all_page_reviews,
+            commands::save_user_setting,
+            commands::get_all_user_settings,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
