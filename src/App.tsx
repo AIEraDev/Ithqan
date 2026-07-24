@@ -5,9 +5,13 @@ import { ReviewStatusHeatmap } from "./components/ReviewStatusHeatmap";
 import { SettingsView } from "./components/SettingsView";
 import { ResumeBanner } from "./components/ResumeBanner";
 import { BookmarkManager } from "./components/BookmarkManager";
+import { DownloadManager } from "./components/DownloadManager";
+import { ReleaseAnalyticsModal } from "./components/ReleaseAnalyticsModal";
 import { initTrayAndHotkeyListeners } from "./services/trayListener";
 import { useQueueStore } from "./store/useQueueStore";
 import { usePlayerStore } from "./store/usePlayerStore";
+import { useDownloadStore } from "./store/useDownloadStore";
+import { Download, RefreshCw } from "lucide-react";
 import "./index.css";
 
 type Tab = "looper" | "review" | "bookmarks" | "settings";
@@ -15,6 +19,13 @@ type Tab = "looper" | "review" | "bookmarks" | "settings";
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("looper");
   const { isQueueActive, loadSavedSettingsFromDb, resumeQueue } = useQueueStore();
+  const {
+    isDownloadManagerOpen,
+    setDownloadManagerOpen,
+    isReleaseStatsOpen,
+    setReleaseStatsOpen,
+    activeJob,
+  } = useDownloadStore();
 
   useEffect(() => {
     initTrayAndHotkeyListeners();
@@ -94,6 +105,22 @@ function App() {
             إتقان
           </span>
         </div>
+
+        <button
+          onClick={() => setDownloadManagerOpen(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700/80 relative"
+          title="Open Audio & Offline Download Manager"
+        >
+          {activeJob && activeJob.status === "downloading" ? (
+            <RefreshCw className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+          ) : (
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+          )}
+          <span>Downloads</span>
+          {activeJob && activeJob.status === "downloading" && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping absolute -top-0.5 -right-0.5" />
+          )}
+        </button>
       </header>
 
       {/* ── Now Playing (always visible during playback) ── */}
@@ -130,6 +157,18 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Modals */}
+      <DownloadManager
+        isOpen={isDownloadManagerOpen}
+        onClose={() => setDownloadManagerOpen(false)}
+        onOpenReleaseStats={() => setReleaseStatsOpen(true)}
+      />
+
+      <ReleaseAnalyticsModal
+        isOpen={isReleaseStatsOpen}
+        onClose={() => setReleaseStatsOpen(false)}
+      />
 
       {/* ── Bottom Navigation Bar ── */}
       <nav

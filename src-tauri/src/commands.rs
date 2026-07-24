@@ -1,4 +1,4 @@
-use crate::audio_cache::{self, CacheStats};
+use crate::audio_cache::{self, CacheStats, SurahDownloadStatus};
 use crate::db::{self, Bookmark, PageReview, SessionState};
 use crate::quran_data::{self, AyahLocation, PageInfo, Surah};
 use crate::reciters::{self, Reciter};
@@ -84,6 +84,30 @@ pub fn clear_cache(
 ) -> Result<(), String> {
     audio_cache::clear_cache(&app, reciter_id.as_deref())?;
     Ok(())
+}
+
+#[tauri::command]
+pub async fn download_surah_batch(
+    app: tauri::AppHandle,
+    reciter_id: String,
+    surah: u8,
+    job_id: String,
+) -> Result<(), String> {
+    audio_cache::download_surah_batch(app, reciter_id, surah, job_id).await
+}
+
+#[tauri::command]
+pub fn cancel_download_job(job_id: String) -> bool {
+    audio_cache::cancel_download_job(&job_id)
+}
+
+#[tauri::command]
+pub fn get_surah_download_status(
+    app: tauri::AppHandle,
+    reciter_id: String,
+    surah: u8,
+) -> Result<SurahDownloadStatus, String> {
+    audio_cache::get_surah_download_status(&app, &reciter_id, surah)
 }
 
 // Database & Session Memory Commands

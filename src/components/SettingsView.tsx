@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CacheStats, quranApi, Reciter } from "../services/quranApi";
 import { useQueueStore } from "../store/useQueueStore";
 import { usePlayerStore } from "../store/usePlayerStore";
+import { useDownloadStore } from "../store/useDownloadStore";
 
 export const SettingsView: React.FC = () => {
   const [reciters, setReciters] = useState<Reciter[]>([]);
@@ -159,18 +160,36 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Offline Cache ── */}
+      {/* ── Offline Cache & Download Management ── */}
       <div className="surface-card" style={{ padding: 12 }}>
-        <div className="text-label" style={{ marginBottom: 8 }}>Offline Audio Storage</div>
+        <div className="text-label" style={{ marginBottom: 8 }}>Audio Storage & Download Center</div>
         {cacheStats ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div className="text-value">{cacheStats.total_files} files</div>
-              <div className="text-meta">{(cacheStats.total_bytes / (1024 * 1024)).toFixed(1)} MB total space</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div className="text-value">{cacheStats.total_files} files</div>
+                <div className="text-meta">{(cacheStats.total_bytes / (1024 * 1024)).toFixed(1)} MB total space</div>
+              </div>
+              <button onClick={handleClearCache} className="btn-ghost" style={{ fontSize: 11, color: "var(--accent-warm)" }}>
+                Clear Storage
+              </button>
             </div>
-            <button onClick={handleClearCache} className="btn-ghost" style={{ fontSize: 11, color: "var(--accent-warm)" }}>
-              Clear Storage
-            </button>
+            <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+              <button
+                onClick={() => useDownloadStore.getState().setDownloadManagerOpen(true)}
+                className="btn-accent"
+                style={{ flex: 1, fontSize: 11, padding: "6px 12px" }}
+              >
+                📥 Open Download Center
+              </button>
+              <button
+                onClick={() => useDownloadStore.getState().setReleaseStatsOpen(true)}
+                className="btn-secondary"
+                style={{ flex: 1, fontSize: 11, padding: "6px 12px" }}
+              >
+                📊 Software Stats
+              </button>
+            </div>
           </div>
         ) : (
           <div className="text-meta">Calculating storage...</div>

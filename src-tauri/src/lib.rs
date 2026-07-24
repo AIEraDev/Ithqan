@@ -70,6 +70,9 @@ pub fn run() {
             commands::get_all_page_reviews,
             commands::save_user_setting,
             commands::get_all_user_settings,
+            commands::download_surah_batch,
+            commands::cancel_download_job,
+            commands::get_surah_download_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
