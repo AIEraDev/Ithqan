@@ -55,12 +55,116 @@ jobs:
           name: macos-${{ matrix.target }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
           if-no-files-found: error
 
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ''
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
+
+      - name: Upload NSIS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-nsis
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ''
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: warn
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: warn
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: src-tauri/target/release/bundle/rpm/*.rpm
+          if-no-files-found: warn
+
   create-release:
-    needs: build-macos
-    runs-on: macos-latest
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,21 +175,41 @@ jobs:
           path: artifacts
 
       - name: List artifacts
-        run: find artifacts -type f | head -50
+        run: find artifacts -type f | sort
 
-      - name: Rename artifacts for clarity
+      - name: Prepare release assets
         run: |
           mkdir -p release-assets
+          TAG="${{ github.ref_name }}"
 
-          # Find and rename DMGs
+          # macOS DMGs
           for dmg in $(find artifacts/macos-aarch64-apple-darwin -name "*.dmg" 2>/dev/null); do
-            cp "$dmg" "release-assets/Ithqan_${{ github.ref_name }}_aarch64.dmg"
+            cp "$dmg" "release-assets/Ithqan_${TAG}_macos_aarch64.dmg"
           done
-
           for dmg in $(find artifacts/macos-x86_64-apple-darwin -name "*.dmg" 2>/dev/null); do
-            cp "$dmg" "release-assets/Ithqan_${{ github.ref_name }}_x64.dmg"
+            cp "$dmg" "release-assets/Ithqan_${TAG}_macos_x64.dmg"
           done
 
+          # Windows
+          for msi in $(find artifacts/windows-msi -name "*.msi" 2>/dev/null); do
+            cp "$msi" "release-assets/Ithqan_${TAG}_windows_x64.msi"
+          done
+          for exe in $(find artifacts/windows-nsis -name "*.exe" 2>/dev/null); do
+            cp "$exe" "release-assets/Ithqan_${TAG}_windows_x64_setup.exe"
+          done
+
+          # Linux
+          for deb in $(find artifacts/linux-deb -name "*.deb" 2>/dev/null); do
+            cp "$deb" "release-assets/Ithqan_${TAG}_linux_amd64.deb"
+          done
+          for appimage in $(find artifacts/linux-appimage -name "*.AppImage" 2>/dev/null); do
+            cp "$appimage" "release-assets/Ithqan_${TAG}_linux_x86_64.AppImage"
+          done
+          for rpm in $(find artifacts/linux-rpm -name "*.rpm" 2>/dev/null); do
+            cp "$rpm" "release-assets/Ithqan_${TAG}_linux_x86_64.rpm"
+          done
+
+          echo "=== Release assets ==="
           ls -lh release-assets/
 
       - name: Create GitHub Release
@@ -93,25 +217,39 @@ jobs:
         with:
           name: Ithqan ${{ github.ref_name }}
           body: |
-            ## Ithqan ${{ github.ref_name }}
+            ## Ithqan ${{ github.ref_name }} — Local-First Quran Review Companion
 
-            ### Downloads
+            ### 🍎 macOS
 
-            | Platform | Architecture | File |
-            |----------|-------------|------|
-            | macOS | Apple Silicon (M1/M2/M3/M4) | `Ithqan_${{ github.ref_name }}_aarch64.dmg` |
-            | macOS | Intel (x86_64) | `Ithqan_${{ github.ref_name }}_x64.dmg` |
+            | Architecture | File |
+            |-------------|------|
+            | Apple Silicon (M1/M2/M3/M4) | `Ithqan_${{ github.ref_name }}_macos_aarch64.dmg` |
+            | Intel (x86_64) | `Ithqan_${{ github.ref_name }}_macos_x64.dmg` |
 
-            ### Install via Homebrew
+            **Install via Homebrew:**
             ```bash
             brew tap AIEraDev/tap
             brew install --cask ithqan
             ```
 
-            ### Manual Install
-            1. Download the `.dmg` for your Mac's architecture
-            2. Open the `.dmg` and drag **Ithqan** to Applications
-            3. On first launch, right-click → Open to bypass Gatekeeper (unsigned build)
+            ### 🪟 Windows
+
+            | Installer | File |
+            |-----------|------|
+            | MSI Installer | `Ithqan_${{ github.ref_name }}_windows_x64.msi` |
+            | NSIS Setup | `Ithqan_${{ github.ref_name }}_windows_x64_setup.exe` |
+
+            ### 🐧 Linux
+
+            | Format | File |
+            |--------|------|
+            | Debian/Ubuntu (.deb) | `Ithqan_${{ github.ref_name }}_linux_amd64.deb` |
+            | AppImage | `Ithqan_${{ github.ref_name }}_linux_x86_64.AppImage` |
+            | Fedora/RHEL (.rpm) | `Ithqan_${{ github.ref_name }}_linux_x86_64.rpm` |
+
+            ---
+
+            > **macOS Note:** Builds are unsigned. On first launch, right-click → Open to bypass Gatekeeper.
           files: release-assets/*
           draft: false
           prerelease: false
