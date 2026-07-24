@@ -10,7 +10,7 @@ use tauri::{
 #[allow(deprecated, unexpected_cfgs)]
 pub fn configure_macos_window(window: &tauri::WebviewWindow) {
     use cocoa::appkit::NSWindow;
-    use cocoa::base::id;
+    use cocoa::base::{id, NO};
 
     if let Ok(raw) = window.ns_window() {
         let ns_win: id = raw as id;
@@ -19,14 +19,14 @@ pub fn configure_macos_window(window: &tauri::WebviewWindow) {
             ns_win.setLevel_(25);
 
             // Disable opaque so rounded corners don't bleed white
-            let _: () = msg_send![ns_win, setOpaque: false];
+            let _: () = msg_send![ns_win, setOpaque: NO];
 
             // Set window background to fully transparent
             let clear_color: id = msg_send![class!(NSColor), clearColor];
             ns_win.setBackgroundColor_(clear_color);
 
             // Disable native window shadow completely
-            ns_win.setHasShadow_(false);
+            ns_win.setHasShadow_(NO);
 
             // Collection behavior: canJoinAllSpaces (1<<0) + fullScreenAuxiliary (1<<4)
             let _: () = msg_send![ns_win, setCollectionBehavior: (1u64 << 0) | (1u64 << 4)];
