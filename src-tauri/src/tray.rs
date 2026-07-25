@@ -155,48 +155,49 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
+                button_state,
                 rect,
                 ..
             } = event
             {
                 let app_handle = tray.app_handle();
                 if let Some(window) = app_handle.get_webview_window("main") {
-                    if window.is_visible().unwrap_or(false) {
-                        let _ = window.hide();
-                    } else {
-                        use std::sync::atomic::Ordering;
-                        let now = std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .map(|d| d.as_millis() as u64)
-                            .unwrap_or(0);
-                        let last_blur = crate::LAST_BLUR_TIME.load(Ordering::Relaxed);
+                    use std::sync::atomic::{AtomicBool, Ordering};
+                    static WAS_OPEN_ON_DOWN: AtomicBool = AtomicBool::new(false);
 
-                        // If window was just hidden by focus loss from clicking tray icon, don't re-open
-                        if now.saturating_sub(last_blur) > 300 {
-                            // Position window relative to tray icon (platform-aware)
-                            let scale_factor = window.scale_factor().unwrap_or(1.0);
-                            let pos = rect.position.to_logical::<f64>(scale_factor);
-                            let size = rect.size.to_logical::<f64>(scale_factor);
+                    match button_state {
+                        MouseButtonState::Down => {
+                            WAS_OPEN_ON_DOWN.store(window.is_visible().unwrap_or(false), Ordering::Relaxed);
+                        }
+                        MouseButtonState::Up => {
+                            let was_open = WAS_OPEN_ON_DOWN.load(Ordering::Relaxed);
+                            if was_open {
+                                let _ = window.emit("popover-close-request", ());
+                            } else {
+                                // Position window relative to tray icon (platform-aware)
+                                let scale_factor = window.scale_factor().unwrap_or(1.0);
+                                let pos = rect.position.to_logical::<f64>(scale_factor);
+                                let size = rect.size.to_logical::<f64>(scale_factor);
 
-                            let win_width = 380.0;
-                            let x = pos.x - (win_width / 2.0) + (size.width / 2.0);
+                                let win_width = 380.0;
+                                let x = pos.x - (win_width / 2.0) + (size.width / 2.0);
 
-                            // macOS: tray at top — window drops DOWN
-                            // Windows/Linux: tray at bottom — window rises UP
-                            #[cfg(target_os = "macos")]
-                            let y = pos.y + size.height;
-                            #[cfg(not(target_os = "macos"))]
-                            let y = {
-                                let win_height = 560.0;
-                                (pos.y - win_height).max(0.0)
-                            };
+                                // macOS: tray at top — window drops DOWN
+                                // Windows/Linux: tray at bottom — window rises UP
+                                #[cfg(target_os = "macos")]
+                                let y = pos.y + size.height;
+                                #[cfg(not(target_os = "macos"))]
+                                let y = {
+                                    let win_height = 560.0;
+                                    (pos.y - win_height).max(0.0)
+                                };
 
-                            let _ = window.set_position(Position::Logical(LogicalPosition::new(x, y)));
+                                let _ = window.set_position(Position::Logical(LogicalPosition::new(x, y)));
 
-                            // Apply macOS overlay panel config + show
-                            configure_macos_window(&window);
-                            show_window_without_activation(&window);
+                                // Apply macOS overlay panel config + show
+                                configure_macos_window(&window);
+                                show_window_without_activation(&window);
+                            }
                         }
                     }
                 }
