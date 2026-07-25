@@ -51,6 +51,7 @@ pub fn configure_macos_window(window: &tauri::WebviewWindow) {
 pub fn show_window_without_activation(window: &tauri::WebviewWindow) {
     use cocoa::base::id;
 
+    let _ = window.emit("popover-open", ());
     let _ = window.show();
     if let Ok(raw) = window.ns_window() {
         let ns_win: id = raw as id;
@@ -69,6 +70,7 @@ pub fn configure_macos_window(_window: &tauri::WebviewWindow) {
 
 #[cfg(not(target_os = "macos"))]
 pub fn show_window_without_activation(window: &tauri::WebviewWindow) {
+    let _ = window.emit("popover-open", ());
     let _ = window.show();
     let _ = window.set_focus();
 }
@@ -163,29 +165,39 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     if window.is_visible().unwrap_or(false) {
                         let _ = window.hide();
                     } else {
-                        // Position window relative to tray icon (platform-aware)
-                        let scale_factor = window.scale_factor().unwrap_or(1.0);
-                        let pos = rect.position.to_logical::<f64>(scale_factor);
-                        let size = rect.size.to_logical::<f64>(scale_factor);
+                        use std::sync::atomic::Ordering;
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_millis() as u64)
+                            .unwrap_or(0);
+                        let last_blur = crate::LAST_BLUR_TIME.load(Ordering::Relaxed);
 
-                        let win_width = 380.0;
-                        let x = pos.x - (win_width / 2.0) + (size.width / 2.0);
+                        // If window was just hidden by focus loss from clicking tray icon, don't re-open
+                        if now.saturating_sub(last_blur) > 300 {
+                            // Position window relative to tray icon (platform-aware)
+                            let scale_factor = window.scale_factor().unwrap_or(1.0);
+                            let pos = rect.position.to_logical::<f64>(scale_factor);
+                            let size = rect.size.to_logical::<f64>(scale_factor);
 
-                        // macOS: tray at top — window drops DOWN
-                        // Windows/Linux: tray at bottom — window rises UP
-                        #[cfg(target_os = "macos")]
-                        let y = pos.y + size.height;
-                        #[cfg(not(target_os = "macos"))]
-                        let y = {
-                            let win_height = 560.0;
-                            (pos.y - win_height).max(0.0)
-                        };
+                            let win_width = 380.0;
+                            let x = pos.x - (win_width / 2.0) + (size.width / 2.0);
 
-                        let _ = window.set_position(Position::Logical(LogicalPosition::new(x, y)));
+                            // macOS: tray at top — window drops DOWN
+                            // Windows/Linux: tray at bottom — window rises UP
+                            #[cfg(target_os = "macos")]
+                            let y = pos.y + size.height;
+                            #[cfg(not(target_os = "macos"))]
+                            let y = {
+                                let win_height = 560.0;
+                                (pos.y - win_height).max(0.0)
+                            };
 
-                        // Apply macOS overlay panel config + show
-                        configure_macos_window(&window);
-                        show_window_without_activation(&window);
+                            let _ = window.set_position(Position::Logical(LogicalPosition::new(x, y)));
+
+                            // Apply macOS overlay panel config + show
+                            configure_macos_window(&window);
+                            show_window_without_activation(&window);
+                        }
                     }
                 }
             }

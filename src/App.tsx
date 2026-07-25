@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 import { NowPlaying } from "./components/NowPlaying";
 import { RepeatQueueControl } from "./components/RepeatQueueControl";
 import { ReviewStatusHeatmap } from "./components/ReviewStatusHeatmap";
@@ -29,6 +30,7 @@ const detectMacOS = (): boolean => {
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("looper");
   const [isMacOS] = useState(detectMacOS);
+  const [animClass, setAnimClass] = useState("popover-anim-in");
   const { isQueueActive, loadSavedSettingsFromDb } = useQueueStore();
   const {
     isDownloadManagerOpen,
@@ -38,18 +40,45 @@ function App() {
     activeJob,
   } = useDownloadStore();
 
+  const closeWithAnimation = useCallback(async () => {
+    setAnimClass("popover-anim-out");
+    setTimeout(async () => {
+      try {
+        const appWindow = getCurrentWindow();
+        await appWindow.hide();
+      } catch (e) {
+        console.error("Failed to hide popover:", e);
+      }
+    }, 130);
+  }, []);
+
   useEffect(() => {
     initTrayAndHotkeyListeners();
     loadSavedSettingsFromDb();
-  }, []);
+
+    let unlistenOpen: (() => void) | null = null;
+    let unlistenClose: (() => void) | null = null;
+
+    listen("popover-open", () => {
+      setAnimClass("popover-anim-in");
+    }).then((unsub) => {
+      unlistenOpen = unsub;
+    });
+
+    listen("popover-close-request", () => {
+      closeWithAnimation();
+    }).then((unsub) => {
+      unlistenClose = unsub;
+    });
+
+    return () => {
+      if (unlistenOpen) unlistenOpen();
+      if (unlistenClose) unlistenClose();
+    };
+  }, [closeWithAnimation]);
 
   const handleMinimize = async () => {
-    try {
-      const appWindow = getCurrentWindow();
-      await appWindow.hide();
-    } catch (e) {
-      console.error("Failed to minimize:", e);
-    }
+    await closeWithAnimation();
   };
 
   const handleClose = async () => {
@@ -70,7 +99,7 @@ function App() {
 
   return (
     <div
-      className="popover-shell"
+      className={`popover-shell ${animClass}`}
       style={{
         width: "100%",
         height: "100%",

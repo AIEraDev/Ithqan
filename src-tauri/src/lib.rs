@@ -10,7 +10,11 @@ pub mod quran_data;
 pub mod reciters;
 pub mod tray;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
+pub static LAST_BLUR_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -64,6 +68,15 @@ pub fn run() {
                     let _ = api; // suppress unused warning
                     // Let the default close behavior proceed — app will quit
                 }
+            }
+            #[cfg(target_os = "macos")]
+            tauri::WindowEvent::Focused(false) => {
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+                LAST_BLUR_TIME.store(now, Ordering::Relaxed);
+                let _ = window.emit("popover-close-request", ());
             }
             _ => {}
         })
