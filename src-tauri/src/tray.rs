@@ -172,7 +172,12 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                         MouseButtonState::Up => {
                             let was_open = WAS_OPEN_ON_DOWN.load(Ordering::Relaxed);
                             if was_open {
-                                let _ = window.emit("popover-close-request", ());
+                                let win = window.clone();
+                                let _ = win.emit("popover-close-request", ());
+                                tauri::async_runtime::spawn(async move {
+                                    tokio::time::sleep(std::time::Duration::from_millis(140)).await;
+                                    let _ = win.hide();
+                                });
                             } else {
                                 // Position window relative to tray icon (platform-aware)
                                 let scale_factor = window.scale_factor().unwrap_or(1.0);

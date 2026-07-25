@@ -76,7 +76,13 @@ pub fn run() {
                     .map(|d| d.as_millis() as u64)
                     .unwrap_or(0);
                 LAST_BLUR_TIME.store(now, Ordering::Relaxed);
-                let _ = window.emit("popover-close-request", ());
+                
+                let win = window.clone();
+                let _ = win.emit("popover-close-request", ());
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_millis(140)).await;
+                    let _ = win.hide();
+                });
             }
             _ => {}
         })

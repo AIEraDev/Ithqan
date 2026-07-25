@@ -40,16 +40,8 @@ function App() {
     activeJob,
   } = useDownloadStore();
 
-  const closeWithAnimation = useCallback(async () => {
+  const closeWithAnimation = useCallback(() => {
     setAnimClass("popover-anim-out");
-    setTimeout(async () => {
-      try {
-        const appWindow = getCurrentWindow();
-        await appWindow.hide();
-      } catch (e) {
-        console.error("Failed to hide popover:", e);
-      }
-    }, 130);
   }, []);
 
   useEffect(() => {
