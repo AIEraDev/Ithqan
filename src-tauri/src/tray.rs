@@ -4,8 +4,10 @@ use tauri::{
     AppHandle, Emitter, Manager, LogicalPosition, Position,
 };
 
-/// Set the NSWindow level above fullscreen apps and make the window
-/// background fully transparent to eliminate white corner bleed.
+/// Set the NSWindow level above all apps (including fullscreen), make
+/// the window background fully transparent, and configure as a non-
+/// activating overlay panel so it floats over Chrome/Safari/etc. without
+/// triggering a macOS desktop-space switch.
 #[cfg(target_os = "macos")]
 #[allow(deprecated, unexpected_cfgs)]
 pub fn configure_macos_window(window: &tauri::WebviewWindow) {
@@ -15,8 +17,9 @@ pub fn configure_macos_window(window: &tauri::WebviewWindow) {
     if let Ok(raw) = window.ns_window() {
         let ns_win: id = raw as id;
         unsafe {
-            // Level 25 = NSStatusWindowLevel — renders above fullscreen apps
-            ns_win.setLevel_(25);
+            // Level 101 = NSPopUpMenuWindowLevel — renders above everything
+            // including fullscreen apps and other always-on-top windows
+            ns_win.setLevel_(101);
 
             // Disable opaque so rounded corners don't bleed white
             let _: () = msg_send![ns_win, setOpaque: NO];
@@ -28,8 +31,33 @@ pub fn configure_macos_window(window: &tauri::WebviewWindow) {
             // Disable native window shadow completely
             ns_win.setHasShadow_(NO);
 
-            // Collection behavior: canJoinAllSpaces (1<<0) + fullScreenAuxiliary (1<<4)
-            let _: () = msg_send![ns_win, setCollectionBehavior: (1u64 << 0) | (1u64 << 4)];
+            // Collection behavior:
+            //   canJoinAllSpaces  (1<<0)  — visible on all desktops/spaces
+            //   stationary        (1<<4)  — stays put when spaces switch
+            //   fullScreenAuxiliary (1<<8) — can overlay fullscreen apps
+            //   ignoresCycle      (1<<6)  — excluded from Cmd+Tab
+            let _: () = msg_send![ns_win, setCollectionBehavior:
+                (1u64 << 0) | (1u64 << 4) | (1u64 << 6) | (1u64 << 8)];
+        }
+    }
+}
+
+/// Bring the window to front WITHOUT activating the app.
+/// This is critical for overlay behavior — calling Tauri's set_focus()
+/// activates the NSApplication, which causes macOS to switch desktops
+/// to the app's space instead of rendering over the current app.
+#[cfg(target_os = "macos")]
+#[allow(deprecated, unexpected_cfgs)]
+pub fn show_window_without_activation(window: &tauri::WebviewWindow) {
+    use cocoa::base::id;
+
+    let _ = window.show();
+    if let Ok(raw) = window.ns_window() {
+        let ns_win: id = raw as id;
+        unsafe {
+            // orderFrontRegardless brings window to front without
+            // making the app active — no desktop switch occurs
+            let _: () = msg_send![ns_win, orderFrontRegardless];
         }
     }
 }
@@ -37,6 +65,12 @@ pub fn configure_macos_window(window: &tauri::WebviewWindow) {
 #[cfg(not(target_os = "macos"))]
 pub fn configure_macos_window(_window: &tauri::WebviewWindow) {
     // No-op on non-macOS platforms
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn show_window_without_activation(window: &tauri::WebviewWindow) {
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -91,8 +125,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                         let _ = window.hide();
                     } else {
                         configure_macos_window(&window);
-                        let _ = window.show();
-                        let _ = window.set_focus();
+                        show_window_without_activation(&window);
                     }
                 }
             }
@@ -125,11 +158,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
                         let _ = window.set_position(Position::Logical(LogicalPosition::new(x, y)));
 
-                        // Apply macOS window transparency + level above fullscreen
+                        // Apply macOS overlay panel config + show without activation
                         configure_macos_window(&window);
-
-                        let _ = window.show();
-                        let _ = window.set_focus();
+                        show_window_without_activation(&window);
                     }
                 }
             }

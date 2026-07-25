@@ -43,9 +43,6 @@ pub fn run() {
                 api.prevent_close();
                 let _ = window.hide();
             }
-            tauri::WindowEvent::Focused(false) => {
-                let _ = window.hide();
-            }
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![
