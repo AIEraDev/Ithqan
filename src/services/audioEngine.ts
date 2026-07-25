@@ -107,15 +107,15 @@ class AudioEngine {
   public async loadAndPlay(filePath: string): Promise<void> {
     if (!this.playerA || !this.playerB) this.initPlayers();
 
-    const currentActive = this.getActivePlayer();
+    // ALWAYS stop both players first to prevent simultaneous audio
+    this.playerA!.pause();
+    this.playerA!.currentTime = 0;
+    this.playerB!.pause();
+    this.playerB!.currentTime = 0;
 
     // Check if the requested file was already pre-buffered on the standby player
     if (this.preloadedPath === filePath) {
       const standby = this.getStandbyPlayer();
-
-      // Pause current active player
-      currentActive.pause();
-      currentActive.currentTime = 0;
 
       // Swap active tag to standby player
       this.activeTag = this.activeTag === "A" ? "B" : "A";
@@ -125,6 +125,7 @@ class AudioEngine {
         this.setStatus("loading");
         standby.volume = this.currentVolume;
         standby.playbackRate = this.currentSpeed;
+        standby.currentTime = 0;
         await standby.play();
         return;
       } catch {
@@ -133,9 +134,10 @@ class AudioEngine {
     }
 
     // Standard load path (if not pre-buffered)
+    const currentActive = this.getActivePlayer();
     try {
       this.setStatus("loading");
-      currentActive.pause();
+      this.preloadedPath = null;
       const src = convertFileSrc(filePath);
       currentActive.src = src;
       currentActive.volume = this.currentVolume;

@@ -9,7 +9,6 @@ import { DownloadManager } from "./components/DownloadManager";
 import { ReleaseAnalyticsModal } from "./components/ReleaseAnalyticsModal";
 import { initTrayAndHotkeyListeners } from "./services/trayListener";
 import { useQueueStore } from "./store/useQueueStore";
-import { usePlayerStore } from "./store/usePlayerStore";
 import { useDownloadStore } from "./store/useDownloadStore";
 import { Download, RefreshCw } from "lucide-react";
 import "./index.css";
@@ -18,7 +17,7 @@ type Tab = "looper" | "review" | "bookmarks" | "settings";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("looper");
-  const { isQueueActive, loadSavedSettingsFromDb, resumeQueue } = useQueueStore();
+  const { isQueueActive, loadSavedSettingsFromDb } = useQueueStore();
   const {
     isDownloadManagerOpen,
     setDownloadManagerOpen,
@@ -30,29 +29,6 @@ function App() {
   useEffect(() => {
     initTrayAndHotkeyListeners();
     loadSavedSettingsFromDb();
-
-    // Auto-Resume on System Wake from Sleep / Window Focus
-    const handleWakeOrFocus = () => {
-      const active = useQueueStore.getState().isQueueActive;
-      const status = usePlayerStore.getState().status;
-
-      if (active && status === "paused") {
-        resumeQueue();
-      }
-    };
-
-    window.addEventListener("focus", handleWakeOrFocus);
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        handleWakeOrFocus();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      window.removeEventListener("focus", handleWakeOrFocus);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
   }, []);
 
   const tabs: { id: Tab; icon: string; label: string }[] = [
