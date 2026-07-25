@@ -331,3 +331,29 @@ select.surface-input {
   background-position: right 10px center;
   padding-right: 28px;
 }
+
+/* ── Window Control Buttons (Windows/Linux) ── */
+.window-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-btn);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.window-control-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.window-control-close:hover {
+  background: var(--danger);
+  color: #fff;
+}
+

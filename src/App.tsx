@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { NowPlaying } from "./components/NowPlaying";
 import { RepeatQueueControl } from "./components/RepeatQueueControl";
 import { ReviewStatusHeatmap } from "./components/ReviewStatusHeatmap";
@@ -10,13 +11,23 @@ import { ReleaseAnalyticsModal } from "./components/ReleaseAnalyticsModal";
 import { initTrayAndHotkeyListeners } from "./services/trayListener";
 import { useQueueStore } from "./store/useQueueStore";
 import { useDownloadStore } from "./store/useDownloadStore";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw, Minus, X } from "lucide-react";
 import "./index.css";
 
 type Tab = "looper" | "review" | "bookmarks" | "settings";
 
+/** Detect macOS via user agent — no extra plugin needed */
+const detectMacOS = (): boolean => {
+  try {
+    return /macintosh|mac os x/i.test(navigator.userAgent);
+  } catch {
+    return false;
+  }
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("looper");
+  const [isMacOS] = useState(detectMacOS);
   const { isQueueActive, loadSavedSettingsFromDb } = useQueueStore();
   const {
     isDownloadManagerOpen,
@@ -31,6 +42,24 @@ function App() {
     loadSavedSettingsFromDb();
   }, []);
 
+  const handleMinimize = async () => {
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.hide();
+    } catch (e) {
+      console.error("Failed to minimize:", e);
+    }
+  };
+
+  const handleClose = async () => {
+    try {
+      const appWindow = getCurrentWindow();
+      await appWindow.close();
+    } catch (e) {
+      console.error("Failed to close:", e);
+    }
+  };
+
   const tabs: { id: Tab; icon: string; label: string }[] = [
     { id: "looper", icon: "🎧", label: "Looper" },
     { id: "review", icon: "📊", label: "Review" },
@@ -44,15 +73,16 @@ function App() {
       style={{
         width: "100%",
         height: "100%",
-        borderRadius: "var(--radius-shell)",
+        borderRadius: isMacOS ? "var(--radius-shell)" : 0,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-popover)",
       }}
     >
-      {/* ── Header ── */}
+      {/* ── Header (draggable on Windows/Linux) ── */}
       <header
+        data-tauri-drag-region
         style={{
           height: 44,
           padding: "0 16px",
@@ -62,6 +92,7 @@ function App() {
           background: "var(--bg-surface)",
           borderBottom: "1px solid var(--border-subtle)",
           flexShrink: 0,
+          cursor: isMacOS ? "default" : "grab",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -82,21 +113,43 @@ function App() {
           </span>
         </div>
 
-        <button
-          onClick={() => setDownloadManagerOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700/80 relative"
-          title="Open Audio & Offline Download Manager"
-        >
-          {activeJob && activeJob.status === "downloading" ? (
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
-          ) : (
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button
+            onClick={() => setDownloadManagerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition border border-slate-700/80 relative"
+            title="Open Audio & Offline Download Manager"
+          >
+            {activeJob && activeJob.status === "downloading" ? (
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+            )}
+            <span>Downloads</span>
+            {activeJob && activeJob.status === "downloading" && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping absolute -top-0.5 -right-0.5" />
+            )}
+          </button>
+
+          {/* Window controls — Windows/Linux only */}
+          {!isMacOS && (
+            <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 4 }}>
+              <button
+                onClick={handleMinimize}
+                className="window-control-btn"
+                title="Minimize to tray"
+              >
+                <Minus size={14} />
+              </button>
+              <button
+                onClick={handleClose}
+                className="window-control-btn window-control-close"
+                title="Close"
+              >
+                <X size={14} />
+              </button>
+            </div>
           )}
-          <span>Downloads</span>
-          {activeJob && activeJob.status === "downloading" && (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping absolute -top-0.5 -right-0.5" />
-          )}
-        </button>
+        </div>
       </header>
 
       {/* ── Now Playing (always visible during playback) ── */}

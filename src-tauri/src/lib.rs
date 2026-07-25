@@ -33,15 +33,35 @@ pub fn run() {
             }
 
             if let Some(window) = app_handle.get_webview_window("main") {
+                // macOS: configure as floating overlay panel (hidden until tray click)
+                #[cfg(target_os = "macos")]
                 tray::configure_macos_window(&window);
+
+                // Windows/Linux: show the window immediately on launch so the
+                // user sees the app. This is expected behavior on these platforms.
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
             }
 
             Ok(())
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                api.prevent_close();
-                let _ = window.hide();
+                // macOS: prevent close and just hide — standard for menu-bar apps.
+                // Windows/Linux: allow the close to proceed normally (app quits).
+                #[cfg(target_os = "macos")]
+                {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let _ = api; // suppress unused warning
+                    // Let the default close behavior proceed — app will quit
+                }
             }
             _ => {}
         })

@@ -2,7 +2,13 @@ use tauri::{AppHandle, Emitter};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 pub fn setup_hotkeys(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    // macOS: Alt+Space (standard modifier for menu-bar apps)
+    // Windows/Linux: Ctrl+Shift+Space (Alt+Space opens the native window system menu)
+    #[cfg(target_os = "macos")]
     let play_pause_sc = Shortcut::new(Some(Modifiers::ALT), Code::Space);
+    #[cfg(not(target_os = "macos"))]
+    let play_pause_sc = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
+
     let replay_sc = Shortcut::new(Some(Modifiers::ALT | Modifiers::SHIFT), Code::KeyR);
     let next_sc = Shortcut::new(Some(Modifiers::ALT | Modifiers::SHIFT), Code::ArrowRight);
     let prev_sc = Shortcut::new(Some(Modifiers::ALT | Modifiers::SHIFT), Code::ArrowLeft);

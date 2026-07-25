@@ -81,7 +81,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       const defMode = map.get("default_repeat_mode");
       const autoResumeSetting = map.get("auto_resume_on_startup");
 
-      const shouldAutoResume = options?.autoPlay ?? (autoResumeSetting !== "false");
+      const shouldAutoResume = options?.autoPlay ?? (autoResumeSetting === "true");
 
       const newConfig: Partial<QueueConfig> = {};
       if (defReciter) newConfig.reciterId = defReciter;

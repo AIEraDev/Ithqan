@@ -73,6 +73,7 @@ pub fn show_window_without_activation(window: &tauri::WebviewWindow) {
     let _ = window.set_focus();
 }
 
+
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let play_pause_i = MenuItemBuilder::with_id("play_pause", "Play / Pause").build(app)?;
     let replay_unit_i = MenuItemBuilder::with_id("replay_unit", "Replay Unit").build(app)?;
@@ -94,15 +95,30 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut tray_builder = TrayIconBuilder::with_id("ithqan-tray")
         .menu(&menu)
-        .show_menu_on_left_click(false)
-        .icon_as_template(true);
+        .show_menu_on_left_click(false);
 
-    let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-icon.png"))
-        .ok()
-        .or_else(|| app.default_window_icon().cloned());
+    // macOS: use template icon (auto-tints for dark/light menu bar)
+    // Windows/Linux: use the full app icon — template rendering is macOS-only
+    #[cfg(target_os = "macos")]
+    {
+        tray_builder = tray_builder.icon_as_template(true);
+        let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-icon.png"))
+            .ok()
+            .or_else(|| app.default_window_icon().cloned());
+        if let Some(icon) = tray_icon {
+            tray_builder = tray_builder.icon(icon);
+        }
+    }
 
-    if let Some(icon) = tray_icon {
-        tray_builder = tray_builder.icon(icon);
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Use the full-color app icon for Windows/Linux system tray
+        let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png"))
+            .ok()
+            .or_else(|| app.default_window_icon().cloned());
+        if let Some(icon) = tray_icon {
+            tray_builder = tray_builder.icon(icon);
+        }
     }
 
     let _tray = tray_builder
@@ -147,18 +163,27 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     if window.is_visible().unwrap_or(false) {
                         let _ = window.hide();
                     } else {
-                        // Position window directly under the tray icon
+                        // Position window relative to tray icon (platform-aware)
                         let scale_factor = window.scale_factor().unwrap_or(1.0);
                         let pos = rect.position.to_logical::<f64>(scale_factor);
                         let size = rect.size.to_logical::<f64>(scale_factor);
 
                         let win_width = 380.0;
                         let x = pos.x - (win_width / 2.0) + (size.width / 2.0);
-                        let y = pos.y + size.height + 0.0;
+
+                        // macOS: tray at top — window drops DOWN
+                        // Windows/Linux: tray at bottom — window rises UP
+                        #[cfg(target_os = "macos")]
+                        let y = pos.y + size.height;
+                        #[cfg(not(target_os = "macos"))]
+                        let y = {
+                            let win_height = 560.0;
+                            (pos.y - win_height).max(0.0)
+                        };
 
                         let _ = window.set_position(Position::Logical(LogicalPosition::new(x, y)));
 
-                        // Apply macOS overlay panel config + show without activation
+                        // Apply macOS overlay panel config + show
                         configure_macos_window(&window);
                         show_window_without_activation(&window);
                     }
