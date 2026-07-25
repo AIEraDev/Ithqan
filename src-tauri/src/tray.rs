@@ -49,16 +49,16 @@ pub fn configure_macos_window(window: &tauri::WebviewWindow) {
 #[cfg(target_os = "macos")]
 #[allow(deprecated, unexpected_cfgs)]
 pub fn show_window_without_activation(window: &tauri::WebviewWindow) {
-    use cocoa::base::id;
+    use cocoa::base::{id, nil, YES};
 
     let _ = window.emit("popover-open", ());
     let _ = window.show();
     if let Ok(raw) = window.ns_window() {
         let ns_win: id = raw as id;
         unsafe {
-            // orderFrontRegardless brings window to front without
-            // making the app active — no desktop switch occurs
-            let _: () = msg_send![ns_win, orderFrontRegardless];
+            let app: id = msg_send![class!(NSApplication), sharedApplication];
+            let _: () = msg_send![app, activateIgnoringOtherApps: YES];
+            let _: () = msg_send![ns_win, makeKeyAndOrderFront: nil];
         }
     }
 }
