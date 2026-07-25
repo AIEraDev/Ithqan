@@ -8,6 +8,7 @@ import { ResumeBanner } from "./components/ResumeBanner";
 import { BookmarkManager } from "./components/BookmarkManager";
 import { DownloadManager } from "./components/DownloadManager";
 import { ReleaseAnalyticsModal } from "./components/ReleaseAnalyticsModal";
+import { UpdateChecker } from "./components/UpdateChecker";
 import { initTrayAndHotkeyListeners } from "./services/trayListener";
 import { useQueueStore } from "./store/useQueueStore";
 import { useDownloadStore } from "./store/useDownloadStore";
@@ -151,6 +152,8 @@ function App() {
           )}
         </div>
       </header>
+
+      <UpdateChecker />
 
       {/* ── Now Playing (always visible during playback) ── */}
       <NowPlaying />

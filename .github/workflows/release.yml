@@ -45,7 +45,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ''
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           args: --target ${{ matrix.target }}
 
@@ -55,6 +56,8 @@ jobs:
           name: macos-${{ matrix.target }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
           if-no-files-found: error
 
   build-windows:
@@ -84,20 +87,27 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ''
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-msi
-          path: src-tauri/target/release/bundle/msi/*.msi
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/msi/*.msi.zip
+            src-tauri/target/release/bundle/msi/*.msi.zip.sig
           if-no-files-found: warn
 
       - name: Upload NSIS artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-nsis
-          path: src-tauri/target/release/bundle/nsis/*.exe
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.nsis.zip
+            src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
           if-no-files-found: warn
 
   build-linux:
@@ -139,7 +149,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ''
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
@@ -152,7 +163,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          path: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz
+            src-tauri/target/release/bundle/appimage/*.AppImage.tar.gz.sig
           if-no-files-found: warn
 
       - name: Upload RPM artifact
@@ -190,27 +204,110 @@ jobs:
             cp "$dmg" "release-assets/Ithqan_${TAG}_macos_x64.dmg"
           done
 
+          # macOS updater bundles (.app.tar.gz + .sig)
+          for f in $(find artifacts/macos-aarch64-apple-darwin -name "*.app.tar.gz" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_macos_aarch64.app.tar.gz"
+          done
+          for f in $(find artifacts/macos-aarch64-apple-darwin -name "*.app.tar.gz.sig" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_macos_aarch64.app.tar.gz.sig"
+          done
+          for f in $(find artifacts/macos-x86_64-apple-darwin -name "*.app.tar.gz" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_macos_x64.app.tar.gz"
+          done
+          for f in $(find artifacts/macos-x86_64-apple-darwin -name "*.app.tar.gz.sig" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_macos_x64.app.tar.gz.sig"
+          done
+
           # Windows
-          for msi in $(find artifacts/windows-msi -name "*.msi" 2>/dev/null); do
+          for msi in $(find artifacts/windows-msi -name "*.msi" ! -name "*.msi.zip" 2>/dev/null); do
             cp "$msi" "release-assets/Ithqan_${TAG}_windows_x64.msi"
           done
           for exe in $(find artifacts/windows-nsis -name "*.exe" 2>/dev/null); do
             cp "$exe" "release-assets/Ithqan_${TAG}_windows_x64_setup.exe"
+          done
+          # Windows updater bundles
+          for f in $(find artifacts/windows-nsis -name "*.nsis.zip" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_windows_x64.nsis.zip"
+          done
+          for f in $(find artifacts/windows-nsis -name "*.nsis.zip.sig" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_windows_x64.nsis.zip.sig"
           done
 
           # Linux
           for deb in $(find artifacts/linux-deb -name "*.deb" 2>/dev/null); do
             cp "$deb" "release-assets/Ithqan_${TAG}_linux_amd64.deb"
           done
-          for appimage in $(find artifacts/linux-appimage -name "*.AppImage" 2>/dev/null); do
+          for appimage in $(find artifacts/linux-appimage -name "*.AppImage" ! -name "*.tar.gz" 2>/dev/null); do
             cp "$appimage" "release-assets/Ithqan_${TAG}_linux_x86_64.AppImage"
           done
           for rpm in $(find artifacts/linux-rpm -name "*.rpm" 2>/dev/null); do
             cp "$rpm" "release-assets/Ithqan_${TAG}_linux_x86_64.rpm"
           done
+          # Linux updater bundles
+          for f in $(find artifacts/linux-appimage -name "*.AppImage.tar.gz" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_linux_x86_64.AppImage.tar.gz"
+          done
+          for f in $(find artifacts/linux-appimage -name "*.AppImage.tar.gz.sig" 2>/dev/null); do
+            cp "$f" "release-assets/Ithqan_${TAG}_linux_x86_64.AppImage.tar.gz.sig"
+          done
 
           echo "=== Release assets ==="
           ls -lh release-assets/
+
+      - name: Generate updater manifest (latest.json)
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          REPO="https://github.com/AIEraDev/Ithqan/releases/download/${TAG}"
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Read signature files
+          MAC_AARCH64_SIG=""
+          MAC_X64_SIG=""
+          WIN_SIG=""
+          LINUX_SIG=""
+
+          if [ -f "release-assets/Ithqan_${TAG}_macos_aarch64.app.tar.gz.sig" ]; then
+            MAC_AARCH64_SIG=$(cat "release-assets/Ithqan_${TAG}_macos_aarch64.app.tar.gz.sig")
+          fi
+          if [ -f "release-assets/Ithqan_${TAG}_macos_x64.app.tar.gz.sig" ]; then
+            MAC_X64_SIG=$(cat "release-assets/Ithqan_${TAG}_macos_x64.app.tar.gz.sig")
+          fi
+          if [ -f "release-assets/Ithqan_${TAG}_windows_x64.nsis.zip.sig" ]; then
+            WIN_SIG=$(cat "release-assets/Ithqan_${TAG}_windows_x64.nsis.zip.sig")
+          fi
+          if [ -f "release-assets/Ithqan_${TAG}_linux_x86_64.AppImage.tar.gz.sig" ]; then
+            LINUX_SIG=$(cat "release-assets/Ithqan_${TAG}_linux_x86_64.AppImage.tar.gz.sig")
+          fi
+
+          cat > release-assets/latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "Ithqan ${TAG} — see release notes on GitHub",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${MAC_AARCH64_SIG}",
+                "url": "${REPO}/Ithqan_${TAG}_macos_aarch64.app.tar.gz"
+              },
+              "darwin-x86_64": {
+                "signature": "${MAC_X64_SIG}",
+                "url": "${REPO}/Ithqan_${TAG}_macos_x64.app.tar.gz"
+              },
+              "windows-x86_64": {
+                "signature": "${WIN_SIG}",
+                "url": "${REPO}/Ithqan_${TAG}_windows_x64.nsis.zip"
+              },
+              "linux-x86_64": {
+                "signature": "${LINUX_SIG}",
+                "url": "${REPO}/Ithqan_${TAG}_linux_x86_64.AppImage.tar.gz"
+              }
+            }
+          }
+          EOF
+
+          echo "=== latest.json ==="
+          cat release-assets/latest.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -218,6 +315,13 @@ jobs:
           name: Ithqan ${{ github.ref_name }}
           body: |
             ## Ithqan ${{ github.ref_name }} — Local-First Quran Review Companion
+
+            ### ✨ What's New
+            - **Cross-platform support** — Windows and Linux now work out of the box
+            - **Auto-updates** — App checks for updates on launch and offers one-click install
+            - Window controls and drag region for Windows/Linux
+            - Fixed tray icon visibility and positioning on all platforms
+            - Platform-aware hotkeys (Ctrl+Shift+Space on Windows/Linux)
 
             ### 🍎 macOS
 
@@ -250,6 +354,7 @@ jobs:
             ---
 
             > **macOS Note:** Builds are unsigned. On first launch, right-click → Open to bypass Gatekeeper.
+            > **Auto-updates:** Existing users will be prompted to update automatically.
           files: release-assets/*
           draft: false
           prerelease: false
