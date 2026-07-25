@@ -41,11 +41,18 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Sanitize private key
+        shell: bash
+        run: |
+          RAW="${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          CLEAN=$(echo "$RAW" | tr -d '\r\n ')
+          echo "TAURI_SIGNING_PRIVATE_KEY=$CLEAN" >> $GITHUB_ENV
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
         with:
           args: --target ${{ matrix.target }}
@@ -83,11 +90,18 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Sanitize private key
+        shell: bash
+        run: |
+          RAW="${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          CLEAN=$(echo "$RAW" | tr -d '\r\n ')
+          echo "TAURI_SIGNING_PRIVATE_KEY=$CLEAN" >> $GITHUB_ENV
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
 
       - name: Upload MSI artifact
@@ -145,11 +159,18 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Sanitize private key
+        shell: bash
+        run: |
+          RAW="${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          CLEAN=$(echo "$RAW" | tr -d '\r\n ')
+          echo "TAURI_SIGNING_PRIVATE_KEY=$CLEAN" >> $GITHUB_ENV
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
 
       - name: Upload DEB artifact
